@@ -7,7 +7,7 @@ use std::net::TcpStream;
 
 fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
-    let body = fetch_inbox_top(
+    fetch_inbox_top(
         &args[1], 
         args[2].parse::<u16>().unwrap(), 
         &args[3], 
@@ -32,7 +32,9 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
         .map_err(|e| e.0)?;
 
     // we want to fetch the first email in the INBOX mailbox
-    imap_session.select("INBOX")?;
+    // imap_session.select("INBOX")?;
+    imap_session.examine("INBOX")?;
+
 
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
