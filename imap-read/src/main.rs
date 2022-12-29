@@ -12,11 +12,10 @@ fn main() -> Result<(), ()>{
         args[2].parse::<u16>().unwrap(), 
         &args[3], 
         &args[4]).unwrap();
-    println!("body: {:?}", body);
     Ok(())
 }
 
-fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Option<String>> {
+fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<()> {
     // let tls = native_tls::TlsConnector::builder().build().unwrap();
 
     // we pass in the domain twice to check that the server's TLS
@@ -37,21 +36,29 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
 
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
-    let messages = imap_session.fetch("1", "RFC822")?;
+    // let messages = imap_session.fetch("1", "RFC822")?;
+    let messages = imap_session.fetch("1", "ALL")?;
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
-        return Ok(None);
+        return Ok(());
     };
 
-    // extract the message's body
-    let body = message.body().expect("message did not have a body!");
-    let body = std::str::from_utf8(body)
-        .expect("message was not valid utf-8")
+    let envelope = message.envelope().unwrap();
+    println!("envelope: {:?}", envelope);
+    let subject = std::str::from_utf8(envelope.subject.unwrap())
+        .expect("was not valid utf-8")
         .to_string();
+    println!("subject: '{}'", subject);
+
+    // extract the message's body
+    // let body = message.body().expect("message did not have a body!");
+    // let body = std::str::from_utf8(body)
+    //     .expect("message was not valid utf-8")
+    //     .to_string();
 
     // be nice to the server and log out
     imap_session.logout()?;
 
-    Ok(Some(body))
+    Ok(())
 }
