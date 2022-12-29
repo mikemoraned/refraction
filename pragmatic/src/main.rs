@@ -4,6 +4,7 @@ use std::io::Write;
 use std::fs::OpenOptions;
 use std::net::TcpStream;
 use imap::Session;
+use imap::types::Fetch;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -44,17 +45,22 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
         sequence_set, 
         "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])").unwrap();
     let entries = messages.into_iter().map(|message| {
-        let envelope = message.envelope().unwrap();
-        let subject = std::str::from_utf8(envelope.subject.unwrap())
-            .expect("was not valid utf-8")
-            .to_string();
-        println!("subject: '{}'", subject);
+        let subject = get_message_subject(message);
         let mut entry = Entry::default();
         entry.set_title(subject);
         entry
     }).collect();
    
     Ok(entries)
+}
+
+fn get_message_subject(message: &Fetch) -> String {
+    let envelope = message.envelope().unwrap();
+    let subject = std::str::from_utf8(envelope.subject.unwrap())
+        .expect("was not valid utf-8")
+        .to_string();
+    println!("subject: '{}'", subject);
+    subject
 }
 
 fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {
