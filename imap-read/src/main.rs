@@ -2,6 +2,8 @@ extern crate imap;
 extern crate native_tls;
 
 use std::env;
+use std::net::TcpStream;
+
 
 fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
@@ -15,11 +17,14 @@ fn main() -> Result<(), ()>{
 }
 
 fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Option<String>> {
-    let tls = native_tls::TlsConnector::builder().build().unwrap();
+    // let tls = native_tls::TlsConnector::builder().build().unwrap();
 
     // we pass in the domain twice to check that the server's TLS
     // certificate is valid for the domain we're connecting to.
-    let client = imap::connect((domain, port), domain, &tls).unwrap();
+    // let client = imap::connect((domain, port), domain, &tls).unwrap();
+
+    let stream = TcpStream::connect((domain, port)).unwrap();
+    let client = imap::Client::new(stream);
 
     // the client we have here is unauthenticated.
     // to do anything useful with the e-mails, we need to log in
