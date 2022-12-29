@@ -5,18 +5,27 @@ use std::env;
 use std::net::TcpStream;
 use imap_proto::types::BodyStructure::*;
 use quoted_printable::{decode, ParseMode};
+use std::fs::OpenOptions;
+use std::io::{Error, Write};
 
 fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
-    fetch_inbox_top(
+    let html = fetch_inbox_top(
         &args[1], 
         args[2].parse::<u16>().unwrap(), 
         &args[3], 
-        &args[4]).unwrap();
+        &args[4]).unwrap().unwrap();
+    let output_file_name = &args[5];
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(false)
+        .open(output_file_name).unwrap();
+    file.write_all(&html.as_bytes()).unwrap();
     Ok(())
 }
 
-fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<()> {
+fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Option<String>> {
     // let tls = native_tls::TlsConnector::builder().build().unwrap();
 
     // we pass in the domain twice to check that the server's TLS
@@ -51,7 +60,7 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
-        return Ok(());
+        return Ok(None);
     };
 
     let envelope = message.envelope().unwrap();
@@ -68,7 +77,7 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     //     .to_string();
     // println!("body: {}", body);
     let body_structure = message.bodystructure().unwrap();
-    match body_structure {
+    let html = match body_structure {
         t @ Text { .. } => { 
             println!("Text: {:?}", t); 
             match message.text() {
@@ -80,15 +89,22 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
                         .expect("text was not valid utf-8")
                         .to_string();
                     println!("text: {}", text);
+                    Some(text)
                 },
-                None => println!("Missing text")
-            };
+                None => { 
+                    println!("Missing text");
+                    None
+                }
+            }
         },
-        _ => println!("something else")
+        _ => { 
+            println!("something else"); 
+            None
+        }
     };
 
     // be nice to the server and log out
     imap_session.logout()?;
 
-    Ok(())
+    Ok(html)
 }
