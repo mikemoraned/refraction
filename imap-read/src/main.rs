@@ -46,7 +46,7 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     // let messages = imap_session.fetch("1", "ALL")?;
     let messages = imap_session.fetch(
         format!("{}", example_sequence), 
-        "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE)")?;
+        "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])")?;
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
@@ -68,7 +68,18 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     // println!("body: {}", body);
     let body_structure = message.bodystructure().unwrap();
     match body_structure {
-        t @ Text { .. } => println!("Text: {:?}", t),
+        t @ Text { .. } => { 
+            println!("Text: {:?}", t); 
+            match message.text() {
+                Some(bytes) => { 
+                    let text = std::str::from_utf8(bytes)
+                        .expect("text was not valid utf-8")
+                        .to_string();
+                    println!("text: {}", text);
+                },
+                None => println!("Missing text")
+            };
+        },
         _ => println!("something else")
     };
 
