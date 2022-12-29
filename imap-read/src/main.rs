@@ -3,7 +3,7 @@ extern crate native_tls;
 
 use std::env;
 use std::net::TcpStream;
-
+use imap_proto::types::BodyStructure::*;
 
 fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
@@ -44,7 +44,9 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     // RFC 822 dictates the format of the body of e-mails
     // let messages = imap_session.fetch("1", "RFC822")?;
     // let messages = imap_session.fetch("1", "ALL")?;
-    let messages = imap_session.fetch(format!("{}", example_sequence), "ALL")?;
+    let messages = imap_session.fetch(
+        format!("{}", example_sequence), 
+        "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE)")?;
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
@@ -58,19 +60,17 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
         .to_string();
     println!("subject: '{}'", subject);
 
-    let messages = imap_session.fetch(format!("{}", example_sequence), "RFC822")?;
-    let message = if let Some(m) = messages.iter().next() {
-        m
-    } else {
-        return Ok(());
-    };
-
     // extract the message's body
-    let body = message.body().expect("message did not have a body!");
-    let body = std::str::from_utf8(body)
-        .expect("message was not valid utf-8")
-        .to_string();
-    println!("body: {}", body);
+    // let body = message.body().expect("message did not have a body!");
+    // let body = std::str::from_utf8(body)
+    //     .expect("message was not valid utf-8")
+    //     .to_string();
+    // println!("body: {}", body);
+    let body_structure = message.bodystructure().unwrap();
+    match body_structure {
+        t @ Text { .. } => println!("Text: {:?}", t),
+        _ => println!("something else")
+    };
 
     // be nice to the server and log out
     imap_session.logout()?;
