@@ -4,6 +4,7 @@ extern crate native_tls;
 use std::env;
 use std::net::TcpStream;
 use imap_proto::types::BodyStructure::*;
+use quoted_printable::{decode, ParseMode};
 
 fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
@@ -71,8 +72,11 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
         t @ Text { .. } => { 
             println!("Text: {:?}", t); 
             match message.text() {
-                Some(bytes) => { 
-                    let text = std::str::from_utf8(bytes)
+                Some(quoted_printable_bytes) => { 
+                    let bytes = decode(
+                        quoted_printable_bytes, ParseMode::Robust)
+                        .expect("was not valid quoted_printable");
+                    let text = std::str::from_utf8(&bytes)
                         .expect("text was not valid utf-8")
                         .to_string();
                     println!("text: {}", text);
