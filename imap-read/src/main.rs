@@ -1,62 +1,52 @@
-#![allow(unused_variables, unused_imports)]
+extern crate imap;
+extern crate native_tls;
+
 use std::env;
 
-use async_imap::error::{Error, Result};
-use futures::TryStreamExt;
-
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<(), ()>{
     let args: Vec<String> = env::args().collect();
-    if args.len() != 4 {
-        eprintln!("need three arguments: imap-server login password");
-        Err(Error::Bad("need three arguments".into()))
-    } else {
-        let res = fetch_inbox_top(&args[1], &args[2], &args[3]).await?;
-        println!("**result:\n{}", res.unwrap());
-        Ok(())
-    }
+    let body = fetch_inbox_top(
+        &args[1], 
+        args[2].parse::<u16>().unwrap(), 
+        &args[3], 
+        &args[4]).unwrap();
+    println!("body: {:?}", body);
+    Ok(())
 }
 
-async fn fetch_inbox_top(imap_server: &str, login: &str, password: &str) -> Result<Option<String>> {
-    let tls = async_native_tls::TlsConnector::new();
-    // let imap_addr = (imap_server, 993);
-    let imap_addr = (imap_server, 2143);
+fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Option<String>> {
+    let tls = native_tls::TlsConnector::builder().build().unwrap();
 
-    // we pass in the imap_server twice to check that the server's TLS
-    // certificate is valid for the imap_server we're connecting to.
-    let client = async_imap::connect(imap_addr, imap_server, tls).await?;
-    println!("-- connected to {}:{}", imap_addr.0, imap_addr.1);
-
-    Ok(None)
+    // we pass in the domain twice to check that the server's TLS
+    // certificate is valid for the domain we're connecting to.
+    let client = imap::connect((domain, port), domain, &tls).unwrap();
 
     // the client we have here is unauthenticated.
     // to do anything useful with the e-mails, we need to log in
-    // let mut imap_session = client.login(login, password).await.map_err(|e| e.0)?;
-    // println!("-- logged in a {}", login);
+    let mut imap_session = client
+        .login(username, password)
+        .map_err(|e| e.0)?;
 
     // we want to fetch the first email in the INBOX mailbox
-    // imap_session.select("INBOX").await?;
-    // println!("-- INBOX selected");
+    imap_session.select("INBOX")?;
 
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
-    // let messages_stream = imap_session.fetch("1", "RFC822").await?;
-    // let messages: Vec<_> = messages_stream.try_collect().await?;
-    // let message = if let Some(m) = messages.first() {
-    //     m
-    // } else {
-    //     return Ok(None);
-    // };
+    let messages = imap_session.fetch("1", "RFC822")?;
+    let message = if let Some(m) = messages.iter().next() {
+        m
+    } else {
+        return Ok(None);
+    };
 
     // extract the message's body
-    // let body = message.body().expect("message did not have a body!");
-    // let body = std::str::from_utf8(body)
-    //     .expect("message was not valid utf-8")
-    //     .to_string();
-    // println!("-- 1 message received, logging out");
+    let body = message.body().expect("message did not have a body!");
+    let body = std::str::from_utf8(body)
+        .expect("message was not valid utf-8")
+        .to_string();
 
     // be nice to the server and log out
-    // imap_session.logout().await?;
+    imap_session.logout()?;
 
-    // Ok(Some(body))
+    Ok(Some(body))
 }
