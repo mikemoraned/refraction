@@ -43,15 +43,18 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
     let messages = imap_session.fetch(
         sequence_set, 
         "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])").unwrap();
-    for message in &messages {
+    let entries = messages.into_iter().map(|message| {
         let envelope = message.envelope().unwrap();
         let subject = std::str::from_utf8(envelope.subject.unwrap())
             .expect("was not valid utf-8")
             .to_string();
         println!("subject: '{}'", subject);
-    }
+        let mut entry = Entry::default();
+        entry.set_title(subject);
+        entry
+    }).collect();
    
-    Ok(vec![Entry::default()])
+    Ok(entries)
 }
 
 fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {
