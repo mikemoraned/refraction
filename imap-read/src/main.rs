@@ -35,11 +35,16 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     // imap_session.select("INBOX")?;
     imap_session.examine("INBOX")?;
 
-
+    let sequences = imap_session.search("FROM pragmaticengineer@substack.com").unwrap();
+    println!("sequences: {:?}", sequences);
+    let example_sequence = sequences.iter().next().unwrap();
+    println!("example sequence: {:?}", example_sequence);
+    
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
     // let messages = imap_session.fetch("1", "RFC822")?;
-    let messages = imap_session.fetch("1", "ALL")?;
+    // let messages = imap_session.fetch("1", "ALL")?;
+    let messages = imap_session.fetch(format!("{}", example_sequence), "ALL")?;
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
@@ -47,7 +52,7 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
     };
 
     let envelope = message.envelope().unwrap();
-    println!("envelope: {:?}", envelope);
+    // println!("envelope: {:?}", envelope);
     let subject = std::str::from_utf8(envelope.subject.unwrap())
         .expect("was not valid utf-8")
         .to_string();
