@@ -58,11 +58,19 @@ fn fetch_inbox_top(domain: &str, port: u16, username: &str, password: &str) -> i
         .to_string();
     println!("subject: '{}'", subject);
 
+    let messages = imap_session.fetch(format!("{}", example_sequence), "RFC822")?;
+    let message = if let Some(m) = messages.iter().next() {
+        m
+    } else {
+        return Ok(());
+    };
+
     // extract the message's body
-    // let body = message.body().expect("message did not have a body!");
-    // let body = std::str::from_utf8(body)
-    //     .expect("message was not valid utf-8")
-    //     .to_string();
+    let body = message.body().expect("message did not have a body!");
+    let body = std::str::from_utf8(body)
+        .expect("message was not valid utf-8")
+        .to_string();
+    println!("body: {}", body);
 
     // be nice to the server and log out
     imap_session.logout()?;
