@@ -1,10 +1,12 @@
 use std::env;
-use atom_syndication::{Feed, Entry};
+use atom_syndication::{Feed, Entry, Content};
 use std::io::Write;
 use std::fs::OpenOptions;
 use std::net::TcpStream;
 use imap::Session;
 use imap::types::Fetch;
+use imap_proto::types::BodyStructure::Text;
+use quoted_printable::{decode, ParseMode};
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -48,6 +50,38 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
         let subject = get_message_subject(message);
         let mut entry = Entry::default();
         entry.set_title(subject);
+    
+        let body_structure = message.bodystructure().unwrap();
+        let html = match body_structure {
+            t @ Text { .. } => { 
+                println!("Text: {:?}", t); 
+                match message.text() {
+                    Some(quoted_printable_bytes) => { 
+                        let bytes = decode(
+                            quoted_printable_bytes, ParseMode::Robust)
+                            .expect("was not valid quoted_printable");
+                        let text = std::str::from_utf8(&bytes)
+                            .expect("text was not valid utf-8")
+                            .to_string();
+                        // println!("text: {}", text);
+                        Some(text)
+                    },
+                    None => { 
+                        println!("Missing text");
+                        None
+                    }
+                }
+            },
+            _ => { 
+                println!("something else"); 
+                None
+            }
+        };
+        let mut content = Content::default();
+        content.set_value(html.unwrap());
+        content.set_content_type("text/html".to_string());
+        entry.set_content(content);
+
         entry
     }).collect();
    
