@@ -52,7 +52,7 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
     let entries = messages.into_iter().map(|message| {
         let mut entry = Entry::default();
     
-        add_metadata_from_message(message, &mut entry);
+        add_metadata_from_message(message, &email, &mut entry);
         
         let content = get_message_content(message);
         entry.set_content(content);
@@ -96,13 +96,26 @@ fn get_message_content(message: &Fetch) -> Content {
     content
 }
 
-fn add_metadata_from_message(message: &Fetch, entry: &mut Entry) {
+fn add_metadata_from_message(message: &Fetch, email: &str, entry: &mut Entry) {
     use mail_parser::parsers::MessageStream;
 
-    entry.set_updated(message.internal_date().unwrap());
+    let internal_datetime = message.internal_date().unwrap();
+
+    entry.set_updated(internal_datetime);
 
     let envelope = message.envelope().unwrap();
 
+    let message_id = std::str::from_utf8(envelope.message_id.unwrap())
+        .expect("was not valid utf-8")
+        .to_string();
+    println!("message id: '{}'", message_id);
+    let tag = format!("tag:{},{}:{:x}", 
+        email,
+        internal_datetime.date_naive().format("%Y-%m-%d"),
+        md5::compute(envelope.message_id.unwrap()));
+    println!("tag '{}'", tag);
+    entry.set_id(tag);
+    
     let subject = std::str::from_utf8(envelope.subject.unwrap())
         .expect("was not valid utf-8")
         .to_string();
