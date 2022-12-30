@@ -97,6 +97,8 @@ fn get_message_content(message: &Fetch) -> Content {
 }
 
 fn add_metadata_from_message(message: &Fetch, entry: &mut Entry) {
+    use mail_parser::parsers::MessageStream;
+
     entry.set_updated(message.internal_date().unwrap());
 
     let envelope = message.envelope().unwrap();
@@ -105,7 +107,15 @@ fn add_metadata_from_message(message: &Fetch, entry: &mut Entry) {
         .expect("was not valid utf-8")
         .to_string();
     println!("subject: '{}'", subject);
-    entry.set_title(subject);
+    if subject.starts_with('=') {
+        let envelope_bytes = envelope.subject.unwrap();
+        let missing_first_char = &envelope_bytes[1..];
+        let subject = MessageStream::new(missing_first_char).decode_rfc2047().unwrap();
+        println!("decoded subject: '{}'", subject);
+        entry.set_title(subject);
+    } else {
+        entry.set_title(subject);
+    }
 }
 
 fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {

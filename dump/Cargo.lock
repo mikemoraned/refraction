@@ -248,6 +248,7 @@ dependencies = [
  "atom_syndication",
  "imap",
  "imap-proto",
+ "mail-parser",
  "native-tls",
  "quoted_printable",
 ]
@@ -405,6 +406,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "mail-parser"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80f330933d5287bcc21be7286850b353f22e7d66fa35d1c545ab030fd934b386"
+dependencies = [
+ "encoding_rs",
 ]
 
 [[package]]
