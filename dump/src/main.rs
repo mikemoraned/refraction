@@ -1,5 +1,5 @@
 use std::env;
-use atom_syndication::{Feed, Entry, Content};
+use atom_syndication::{Feed, Entry, Content, FixedDateTime};
 use std::io::Write;
 use std::fs::OpenOptions;
 use std::net::TcpStream;
@@ -7,6 +7,7 @@ use imap::Session;
 use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
+use std::str::FromStr;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -50,9 +51,8 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
     let entries = messages.into_iter().map(|message| {
         let mut entry = Entry::default();
     
-        let subject = get_message_subject(message);
-        entry.set_title(subject);
-    
+        add_metadata_from_message(message, &mut entry);
+        
         let content = get_message_content(message);
         entry.set_content(content);
 
@@ -95,13 +95,16 @@ fn get_message_content(message: &Fetch) -> Content {
     content
 }
 
-fn get_message_subject(message: &Fetch) -> String {
+fn add_metadata_from_message(message: &Fetch, entry: &mut Entry) {
+    entry.set_updated(message.internal_date().unwrap());
+
     let envelope = message.envelope().unwrap();
+
     let subject = std::str::from_utf8(envelope.subject.unwrap())
         .expect("was not valid utf-8")
         .to_string();
     println!("subject: '{}'", subject);
-    subject
+    entry.set_title(subject);
 }
 
 fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {
