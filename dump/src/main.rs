@@ -1,5 +1,5 @@
 use std::env;
-use atom_syndication::{Feed, Entry, Content, FixedDateTime};
+use atom_syndication::{Feed, Entry, Content};
 use std::io::Write;
 use std::fs::OpenOptions;
 use std::net::TcpStream;
@@ -7,7 +7,6 @@ use imap::Session;
 use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
-use std::str::FromStr;
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
@@ -26,7 +25,9 @@ fn main() -> Result<(), ()> {
     let mut imap_session = open_session(&domain,port, &username, &password).unwrap();
 
     let entries = fetch_entries(&mut imap_session, &email).unwrap();
+    let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
     feed.set_entries(entries);
+    feed.set_updated(latest_date);
 
     imap_session.logout().unwrap();
 
