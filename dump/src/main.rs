@@ -27,6 +27,7 @@ struct IMAP {
 #[derive(Deserialize, Debug)]
 struct FeedConfig {
     id: String,
+    title: String,
     email: String
 }
 
@@ -44,7 +45,7 @@ fn main() -> Result<(), ()> {
         let output_file_path = format!("./dumped/{}.xml", feed_config.id);
 
         let mut feed = Feed::default();
-        feed.set_title(format!("Feed for '{}'", feed_config.email));
+        feed.set_title(feed_config.title);
 
         let entries = fetch_entries(&mut imap_session, &feed_config.email).unwrap();
         let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
