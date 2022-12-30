@@ -8,12 +8,26 @@ use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
 
+use serde::Deserialize;
+use std::fs;
+
+#[derive(Deserialize)]
+struct Config {
+    imap: IMAP
+}
+
+#[derive(Deserialize)]
+struct IMAP {
+    domain: String,
+    port: u16,
+    username: String,
+}
+
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
 
-    let domain = "127.0.0.1";
-    let port = 2143;
-    let username = "mike@houseofmoran.com";
+    let config : Config = toml::from_str(&fs::read_to_string("refraction.toml").unwrap()).unwrap();
+
     let password = &args[1];
     let feed_id = &args[2];
     let output_file_path = format!("./dumped/{}.xml", feed_id);
@@ -22,7 +36,8 @@ fn main() -> Result<(), ()> {
     let mut feed = Feed::default();
     feed.set_title(format!("Feed for '{}'", email));
 
-    let mut imap_session = open_session(&domain,port, &username, &password).unwrap();
+    let mut imap_session = 
+        open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
 
     let entries = fetch_entries(&mut imap_session, &email).unwrap();
     let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
