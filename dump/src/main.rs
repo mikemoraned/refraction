@@ -31,11 +31,9 @@ struct FeedConfig {
 }
 
 fn main() -> Result<(), ()> {
-    let args: Vec<String> = env::args().collect();
-
     let config : Config = toml::from_str(&fs::read_to_string("refraction.toml").unwrap()).unwrap();
 
-    let password = &args[1];
+    let password = env::var("IMAP_PASSWORD").unwrap();
 
     let mut imap_session = 
         open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
