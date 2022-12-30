@@ -8,35 +8,59 @@ use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
 
+use serde::Deserialize;
+use std::fs;
+
+#[derive(Deserialize)]
+struct Config {
+    imap: IMAP,
+    feeds: Option<Vec<FeedConfig>>
+}
+
+#[derive(Deserialize)]
+struct IMAP {
+    domain: String,
+    port: u16,
+    username: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct FeedConfig {
+    id: String,
+    title: String,
+    email: String
+}
+
 fn main() -> Result<(), ()> {
-    let args: Vec<String> = env::args().collect();
+    let config : Config = toml::from_str(&fs::read_to_string("refraction.toml").unwrap()).unwrap();
 
-    let domain = "127.0.0.1";
-    let port = 2143;
-    let username = "mike@houseofmoran.com";
-    let password = &args[1];
-    let feed_id = &args[2];
-    let output_file_path = format!("./dumped/{}.xml", feed_id);
-    let email = &args[3];
+    let password = env::var("IMAP_PASSWORD").unwrap();
 
-    let mut feed = Feed::default();
-    feed.set_title(format!("Feed for '{}'", email));
+    let mut imap_session = 
+        open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
 
-    let mut imap_session = open_session(&domain,port, &username, &password).unwrap();
+    for feed_config in config.feeds.unwrap() {
+        println!("Doing {:?}", feed_config);
 
-    let entries = fetch_entries(&mut imap_session, &email).unwrap();
-    let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
-    feed.set_entries(entries);
-    feed.set_updated(latest_date);
+        let output_file_path = format!("./dumped/{}.xml", feed_config.id);
+
+        let mut feed = Feed::default();
+        feed.set_title(feed_config.title);
+
+        let entries = fetch_entries(&mut imap_session, &feed_config.email).unwrap();
+        let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
+        feed.set_entries(entries);
+        feed.set_updated(latest_date);
+
+        let mut output_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .append(false)
+            .open(output_file_path).unwrap();
+        output_file.write_all(feed.to_string().as_bytes()).unwrap();
+    }
 
     imap_session.logout().unwrap();
-
-    let mut output_file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .append(false)
-        .open(output_file_path).unwrap();
-    output_file.write_all(feed.to_string().as_bytes()).unwrap();
 
     Ok(())
 }
