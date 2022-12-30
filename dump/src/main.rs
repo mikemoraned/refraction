@@ -25,7 +25,9 @@ fn main() -> Result<(), ()> {
     let mut imap_session = open_session(&domain,port, &username, &password).unwrap();
 
     let entries = fetch_entries(&mut imap_session, &email).unwrap();
+    let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
     feed.set_entries(entries);
+    feed.set_updated(latest_date);
 
     imap_session.logout().unwrap();
 
@@ -50,9 +52,8 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
     let entries = messages.into_iter().map(|message| {
         let mut entry = Entry::default();
     
-        let subject = get_message_subject(message);
-        entry.set_title(subject);
-    
+        add_metadata_from_message(message, &mut entry);
+        
         let content = get_message_content(message);
         entry.set_content(content);
 
@@ -95,13 +96,16 @@ fn get_message_content(message: &Fetch) -> Content {
     content
 }
 
-fn get_message_subject(message: &Fetch) -> String {
+fn add_metadata_from_message(message: &Fetch, entry: &mut Entry) {
+    entry.set_updated(message.internal_date().unwrap());
+
     let envelope = message.envelope().unwrap();
+
     let subject = std::str::from_utf8(envelope.subject.unwrap())
         .expect("was not valid utf-8")
         .to_string();
     println!("subject: '{}'", subject);
-    subject
+    entry.set_title(subject);
 }
 
 fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {
