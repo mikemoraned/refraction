@@ -49,7 +49,7 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
     let messages = imap_session.fetch(
         sequence_set, 
         "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])").unwrap();
-    let entries = messages.into_iter().map(|message| {
+    let entries = messages.into_iter().flat_map(|message| {
         let mut entry = Entry::default();
     
         add_metadata_from_message(message, &email, &mut entry);
@@ -57,10 +57,34 @@ fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::er
         let content = get_message_content(message);
         entry.set_content(content);
 
-        entry
+        let readable_entry = readable_version(&entry);
+
+        vec![entry, readable_entry]
     }).collect();
    
     Ok(entries)
+}
+
+fn readable_version(entry: &Entry) -> Entry {
+    use readable_readability::Readability;
+
+    let mut readable_entry = entry.clone();
+    readable_entry.set_id(format!("{}-readable", entry.id()));
+    readable_entry.set_title(format!("{} [Readable]", entry.title().as_str()));
+
+    let content = entry.content().unwrap();
+    let html = content.value().unwrap();
+    let (content_root, _) = Readability::new().parse(&html);
+    let mut readable_bytes = vec![];
+    content_root.serialize(&mut readable_bytes).unwrap();
+    let readable_html = std::str::from_utf8(&readable_bytes)
+                        .expect("text was not valid utf-8")
+                        .to_string();
+    let mut readable_content = entry.content().unwrap().clone();
+    readable_content.set_value(readable_html);
+    readable_entry.set_content(readable_content);
+
+    readable_entry
 }
 
 fn get_message_content(message: &Fetch) -> Content {
