@@ -23,14 +23,25 @@ fn main() -> Result<(), ()> {
         println!("Doing {:?}", feed_config);
 
         let feed_file_path = format!("./dumped/{}.xml", feed_config.id);
-
-        let input_file = File::open(&feed_file_path).unwrap();
-        let existing_feed = Feed::read_from(BufReader::new(input_file)).unwrap();
+        let (existing_feed, query) = match File::open(&feed_file_path) {
+            Ok(input_file) => {
+                println!("Reading {}", feed_file_path);
+                let feed = Feed::read_from(BufReader::new(input_file)).unwrap();
+                let query = imap_to_feed::email_since_query(&feed_config.email, &feed.updated().date_naive());
+                (feed, query)
+            },
+            Err(message) => {
+                println!("Got error reading {}, '{:?}', starting from empty Feed", feed_file_path, message);
+                let feed = Feed::default();
+                let query = imap_to_feed::email_query(&feed_config.email);
+                (feed, query)
+            }
+        };
+        print!("Using Query: {:?}", query);
 
         let mut new_feed = Feed::default();
         new_feed.set_title(feed_config.title.clone());
 
-        let query = imap_to_feed::email_since_query(&feed_config.email, &existing_feed.updated().date_naive());
         let author = &feed_config.email;
         let mut possibly_new_entries = imap_to_feed::fetch_entries(&mut imap_session, &author, &query).unwrap();
         println!("possibly new entries: {}", possibly_new_entries.len());

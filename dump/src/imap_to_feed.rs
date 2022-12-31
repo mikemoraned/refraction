@@ -6,6 +6,7 @@ use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
 use chrono::NaiveDate;
 
+#[derive(Debug)]
 pub struct Query(String);
 
 impl Query {
