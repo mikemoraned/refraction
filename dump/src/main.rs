@@ -8,31 +8,10 @@ use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
 
-use serde::Deserialize;
-use std::fs;
-
-#[derive(Deserialize)]
-struct Config {
-    imap: IMAP,
-    feeds: Option<Vec<FeedConfig>>
-}
-
-#[derive(Deserialize)]
-struct IMAP {
-    domain: String,
-    port: u16,
-    username: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct FeedConfig {
-    id: String,
-    title: String,
-    email: String
-}
+mod config;
 
 fn main() -> Result<(), ()> {
-    let config : Config = toml::from_str(&fs::read_to_string("refraction.toml").unwrap()).unwrap();
+    let config = config::from_path("refraction.toml");
 
     let password = env::var("IMAP_PASSWORD").unwrap();
 
