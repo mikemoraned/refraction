@@ -3,10 +3,9 @@ use atom_syndication::Feed;
 use std::io::Write;
 use std::fs::OpenOptions;
 
-mod config;
-mod imap_session;
-mod readability;
-mod imap_to_feed;
+use refraction::config;
+use refraction::imap_session;
+use refraction::imap_to_feed;
 
 fn main() -> Result<(), ()> {
     let config = config::from_path("refraction.toml");
