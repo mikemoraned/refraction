@@ -5,8 +5,20 @@ use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
 
-pub fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap::error::Result<Vec<Entry>> {
-    let sequences = imap_session.search(format!("FROM {}", email)).unwrap();
+pub struct Query(String);
+
+impl Query {
+    pub fn to_imap_query(&self) -> String {
+        self.0.clone()
+    }
+}
+
+pub fn email_query(email: &str) -> Query {
+    Query(format!("FROM {}", email))
+}
+
+pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {
+    let sequences = imap_session.search(query.to_imap_query()).unwrap();
     println!("sequences: {:?}", sequences);
 
     let sequence_set = sequences.into_iter().map(|s| s.to_string()).collect::<Vec<String>>().join(",");
@@ -16,7 +28,7 @@ pub fn fetch_entries(imap_session: &mut Session<TcpStream>, email: &str) -> imap
     let entries = messages.into_iter().flat_map(|message| {
         let mut entry = Entry::default();
     
-        add_metadata_from_message(message, &email, &mut entry);
+        add_metadata_from_message(message, &author, &mut entry);
         
         let content = get_message_content(message);
         entry.set_content(content);
@@ -62,7 +74,7 @@ fn get_message_content(message: &Fetch) -> Content {
     content
 }
 
-fn add_metadata_from_message(message: &Fetch, email: &str, entry: &mut Entry) {
+fn add_metadata_from_message(message: &Fetch, author: &str, entry: &mut Entry) {
     use mail_parser::parsers::MessageStream;
 
     let internal_datetime = message.internal_date().unwrap();
@@ -76,7 +88,7 @@ fn add_metadata_from_message(message: &Fetch, email: &str, entry: &mut Entry) {
         .to_string();
     println!("message id: '{}'", message_id);
     let tag = format!("tag:{},{}:{:x}", 
-        email,
+        author,
         internal_datetime.date_naive().format("%Y-%m-%d"),
         md5::compute(envelope.message_id.unwrap()));
     println!("tag '{}'", tag);

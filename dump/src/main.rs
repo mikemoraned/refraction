@@ -24,7 +24,9 @@ fn main() -> Result<(), ()> {
         let mut feed = Feed::default();
         feed.set_title(feed_config.title);
 
-        let entries = imap_to_feed::fetch_entries(&mut imap_session, &feed_config.email).unwrap();
+        let query = imap_to_feed::email_query(&feed_config.email);
+        let author = &feed_config.email;
+        let entries = imap_to_feed::fetch_entries(&mut imap_session, &author, &query).unwrap();
         let latest_date = entries.iter().map(|e| e.updated).max().unwrap();
         feed.set_entries(entries);
         feed.set_updated(latest_date);
