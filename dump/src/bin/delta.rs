@@ -37,7 +37,7 @@ fn main() -> Result<(), ()> {
                 (feed, query)
             }
         };
-        print!("Using Query: {:?}", query);
+        println!("Using Query: {:?}", query);
 
         let mut new_feed = Feed::default();
         new_feed.set_title(feed_config.title.clone());
