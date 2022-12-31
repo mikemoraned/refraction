@@ -4,6 +4,7 @@ use imap::Session;
 use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
 use quoted_printable::{decode, ParseMode};
+use chrono::NaiveDate;
 
 pub struct Query(String);
 
@@ -14,7 +15,11 @@ impl Query {
 }
 
 pub fn email_query(email: &str) -> Query {
-    Query(format!("FROM {}", email))
+    Query(format!("FROM \"{}\"", email))
+}
+
+pub fn email_since_query(email: &str, date: &NaiveDate) -> Query {
+    Query(format!("FROM \"{}\" SINCE {}", email, date.format("%v")))
 }
 
 pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {

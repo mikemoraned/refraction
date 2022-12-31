@@ -24,3 +24,4 @@ md5 = "0.7.0"
 readable-readability = "0.4.0"
 serde = { version="1.0.152", features = ["derive"] }
 toml = "0.5.10"
+chrono = "0.4.23"

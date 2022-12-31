@@ -313,6 +313,7 @@ name = "dump"
 version = "0.1.0"
 dependencies = [
  "atom_syndication",
+ "chrono",
  "imap",
  "imap-proto",
  "mail-parser",
