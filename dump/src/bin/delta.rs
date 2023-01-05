@@ -25,16 +25,23 @@ fn main() -> Result<(), ()> {
         let feed_file_path = format!("./dumped/{}.xml", feed_config.id);
         let (existing_feed, query) = match File::open(&feed_file_path) {
             Ok(input_file) => {
-                println!("Reading {}", feed_file_path);
+                println!("Reading '{}'", feed_file_path);
                 let feed = Feed::read_from(BufReader::new(input_file)).unwrap();
                 let query = imap_to_feed::email_since_query(&feed_config.email, &feed.updated().date_naive());
                 (feed, query)
             },
-            Err(message) => {
-                println!("Got error reading {}, '{:?}', starting from empty Feed", feed_file_path, message);
-                let feed = Feed::default();
-                let query = imap_to_feed::email_query(&feed_config.email);
-                (feed, query)
+            Err(error) => {
+                match error.kind() {
+                    std::io::ErrorKind::NotFound => {
+                        println!("File '{}' doesn't exist, so starting from empty Feed", feed_file_path);
+                        let feed = Feed::default();
+                        let query = imap_to_feed::email_query(&feed_config.email);
+                        (feed, query)
+                    },
+                    _ => {
+                        panic!("Unexpected error opening {}: {:?}", feed_file_path, error)
+                    }
+                }
             }
         };
         println!("Using Query: {:?}", query);
