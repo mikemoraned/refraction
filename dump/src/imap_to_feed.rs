@@ -24,13 +24,13 @@ pub fn email_since_query(email: &str, date: &NaiveDate) -> Query {
 }
 
 pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {
-    let sequences = imap_session.search(query.to_imap_query()).unwrap();
+    let sequences = imap_session.search(query.to_imap_query())?;
     println!("sequences: {:?}", sequences);
 
     let sequence_set = sequences.into_iter().map(|s| s.to_string()).collect::<Vec<String>>().join(",");
     let messages = imap_session.fetch(
         sequence_set, 
-        "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])").unwrap();
+        "(FLAGS INTERNALDATE RFC822.SIZE ENVELOPE BODYSTRUCTURE BODY.PEEK[TEXT])")?;
     let entries = messages.into_iter().flat_map(|message| {
         let mut entry = Entry::default();
     
