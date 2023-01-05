@@ -20,7 +20,7 @@ pub fn email_query(email: &str) -> Query {
 }
 
 pub fn email_since_query(email: &str, date: &NaiveDate) -> Query {
-    Query(format!("FROM \"{}\" SINCE {}", email, date.format("%v")))
+    Query(format!("FROM \"{}\" SINCE {}", email, date.format("%d-%b-%Y")))
 }
 
 pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {
