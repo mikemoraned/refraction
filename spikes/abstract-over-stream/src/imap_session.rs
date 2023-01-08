@@ -2,8 +2,10 @@ use std::net::TcpStream;
 use native_tls::TlsStream;
 use imap::Session;
 
+pub type Stream = TlsStream<TcpStream>;
+
 pub fn open_session(domain: &str, port: u16, username: &str, password: &str) 
-    -> imap::error::Result<Session<TlsStream<TcpStream>>> {
+    -> imap::error::Result<Session<Stream>> {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
 
     // let stream = TcpStream::connect((domain, port)).unwrap();
@@ -27,6 +29,6 @@ pub fn open_session(domain: &str, port: u16, username: &str, password: &str)
     Ok(imap_session)
 }
 
-pub fn close_session(mut imap_session: Session<TlsStream<TcpStream>>) {
+pub fn close_session(mut imap_session: Session<Stream>) {
     imap_session.logout().unwrap();
 }
