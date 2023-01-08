@@ -3,18 +3,19 @@ use std::fs;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub imap: IMAP,
+    pub sources: Option<Vec<IMAP>>,
     pub feeds: Option<Vec<FeedConfig>>
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct IMAP {
+    pub id: String,
     pub domain: String,
     pub port: u16,
     pub username: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct FeedConfig {
     pub id: String,
     pub title: String,
