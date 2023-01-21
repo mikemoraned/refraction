@@ -1,11 +1,12 @@
-use std::net::TcpStream;
+use std::{net::TcpStream, io::{Read, Write}};
 use native_tls::TlsStream;
 use imap::Session;
 
-pub type Stream = TlsStream<TcpStream>;
+// pub type Stream = TlsStream<TcpStream>;
 
-pub fn open_session(domain: &str, port: u16, username: &str, password: &str) 
-    -> imap::error::Result<Session<Stream>> {
+pub fn open_session<S>(domain: &str, port: u16, username: &str, password: &str) 
+    -> imap::error::Result<Session<S>>
+where S: Read + Write {
     let tls = native_tls::TlsConnector::builder().build().unwrap();
 
     // let stream = TcpStream::connect((domain, port)).unwrap();
@@ -18,7 +19,7 @@ pub fn open_session(domain: &str, port: u16, username: &str, password: &str)
 
     // the client we have here is unauthenticated.
     // to do anything useful with the e-mails, we need to log in
-    let mut imap_session = client
+    let mut imap_session : Session<S> = client
         .login(username, password)
         .map_err(|e| e.0)?;
 
@@ -29,6 +30,7 @@ pub fn open_session(domain: &str, port: u16, username: &str, password: &str)
     Ok(imap_session)
 }
 
-pub fn close_session(mut imap_session: Session<Stream>) {
+pub fn close_session<S>(mut imap_session: Session<S>)
+where S: Read + Write {
     imap_session.logout().unwrap();
 }
