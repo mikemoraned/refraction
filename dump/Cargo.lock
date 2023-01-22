@@ -309,23 +309,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dump"
-version = "0.1.0"
-dependencies = [
- "atom_syndication",
- "chrono",
- "imap",
- "imap-proto",
- "mail-parser",
- "md5",
- "native-tls",
- "quoted_printable",
- "readable-readability",
- "serde",
- "toml",
-]
-
-[[package]]
 name = "encoding_rs"
 version = "0.8.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1008,6 +991,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "refraction"
+version = "0.1.0"
+dependencies = [
+ "atom_syndication",
+ "chrono",
+ "imap",
+ "imap-proto",
+ "mail-parser",
+ "md5",
+ "native-tls",
+ "quoted_printable",
+ "readable-readability",
+ "serde",
+ "toml",
 ]
 
 [[package]]
