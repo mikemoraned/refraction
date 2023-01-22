@@ -1,8 +1,10 @@
 use std::net::TcpStream;
 use imap::Session;
 
+pub type ImapSession = Session<TcpStream>;
+
 pub fn open_session(domain: &str, port: u16, username: &str, password: &str) 
-    -> imap::error::Result<Session<TcpStream>> {
+    -> imap::error::Result<ImapSession> {
     let stream = TcpStream::connect((domain, port)).unwrap();
     let client = imap::Client::new(stream);
 
@@ -19,6 +21,6 @@ pub fn open_session(domain: &str, port: u16, username: &str, password: &str)
     Ok(imap_session)
 }
 
-pub fn close_session(mut imap_session: Session<TcpStream>) {
+pub fn close_session(mut imap_session: ImapSession) {
     imap_session.logout().unwrap();
 }

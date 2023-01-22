@@ -9,7 +9,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let sequence_set = &args[1];
 
-    let mut imap_session = 
+    let mut imap_session: imap_session::ImapSession = 
         imap_session::open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
 
     let messages = imap_session.fetch(sequence_set, "RFC822").unwrap();
