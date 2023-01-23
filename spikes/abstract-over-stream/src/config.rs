@@ -11,6 +11,7 @@ pub struct IMAP {
     pub domain: String,
     pub port: u16,
     pub username: String,
+    pub tls: bool
 }
 
 pub fn from_path(path: &str) -> Config {

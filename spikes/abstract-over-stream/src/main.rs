@@ -11,12 +11,22 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let sequence_set = &args[1];
 
-    let mut imap_session = 
-        imap_session::open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
+    if config.imap.tls {
+        let mut imap_session = 
+            imap_session::open_tls_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
 
-    fetch_message(&mut imap_session, sequence_set);
+        fetch_message(&mut imap_session, sequence_set);
 
-    imap_session::close(imap_session);
+        imap_session::close(imap_session);
+    }
+    else {
+        let mut imap_session = 
+            imap_session::open_session(&config.imap.domain, config.imap.port, &config.imap.username, &password).unwrap();
+
+        fetch_message(&mut imap_session, sequence_set);
+
+        imap_session::close(imap_session);
+    }
 }
 
 pub fn fetch_message<T: Read + Write>(imap_session: &mut Session<T>, sequence_set: &str) {
