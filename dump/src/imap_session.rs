@@ -1,23 +1,39 @@
-use std::net::TcpStream;
+use std::{net::TcpStream, io::{Read, Write}};
 use imap::Session;
+use native_tls::TlsStream;
 
-pub fn open_session(domain: &str, port: u16, username: &str, password: &str) -> imap::error::Result<Session<TcpStream>> {
-    let stream = TcpStream::connect((domain, port)).unwrap();
-    let client = imap::Client::new(stream);
+pub fn open_starttls_session(domain: &str, port: u16, username: &str, password: &str) 
+    -> imap::error::Result<Session<TlsStream<TcpStream>>> {
+    let tls = native_tls::TlsConnector::builder().build().unwrap();
 
-    // the client we have here is unauthenticated.
-    // to do anything useful with the e-mails, we need to log in
+    let client = 
+        imap::connect_starttls((domain, port), domain, &tls).unwrap();
+
     let mut imap_session = client
         .login(username, password)
         .map_err(|e| e.0)?;
 
-    // we want to fetch the first email in the INBOX mailbox
-    // imap_session.select("INBOX")?;
     imap_session.examine("INBOX")?;
 
     Ok(imap_session)
 }
 
-pub fn close_session(mut imap_session: Session<TcpStream>) {
-    imap_session.logout().unwrap();
+pub fn open_tls_session(domain: &str, port: u16, username: &str, password: &str) 
+    -> imap::error::Result<Session<TlsStream<TcpStream>>> {
+    let tls = native_tls::TlsConnector::builder().build().unwrap();
+
+    let client = 
+        imap::connect((domain, port), domain, &tls).unwrap();
+
+    let mut imap_session = client
+        .login(username, password)
+        .map_err(|e| e.0)?;
+
+    imap_session.examine("INBOX")?;
+
+    Ok(imap_session)
+}
+
+pub fn close<T: Read + Write>(mut session: Session<T>) {
+    session.logout().unwrap();
 }

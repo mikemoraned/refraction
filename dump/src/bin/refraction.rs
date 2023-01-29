@@ -6,6 +6,7 @@ use std::io::Write;
 use std::fs::OpenOptions;
 
 use refraction::config;
+use refraction::config::ConnectMethod;
 use refraction::imap_session;
 use refraction::imap_to_feed;
 use refraction::feed;
@@ -20,10 +21,17 @@ fn main() -> Result<(), ()> {
 
         let password = env::var(env_var).unwrap();
 
-        let mut imap_session = 
-            imap_session::open_session(&source.domain, source.port, &source.username, &password).unwrap();
+        let mut imap_session = match source.method {
+            ConnectMethod::STARTTLS => 
+                imap_session::open_starttls_session(&source.domain, source.port, &source.username, &password).unwrap(),
+            ConnectMethod::TLS => 
+                imap_session::open_tls_session(&source.domain, source.port, &source.username, &password).unwrap()
+        };
 
-        for feed_config in config.feeds.clone().unwrap() {
+        let all_feeds = config.feeds.clone().unwrap();
+        let feeds_for_source : Vec<&config::FeedConfig>
+            = all_feeds.iter().filter(|f| f.source == source.id).collect();
+        for feed_config in feeds_for_source {
             println!("Doing {:?}", feed_config);
 
             let feed_file_path = format!("./dumped/{}.xml", feed_config.id);
@@ -93,7 +101,7 @@ fn main() -> Result<(), ()> {
             }   
         }
 
-        imap_session::close_session(imap_session);
+        imap_session::close(imap_session);
     }
     println!("Total entries changed: {}", total_changed_count);
     

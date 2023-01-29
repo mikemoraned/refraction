@@ -1,5 +1,5 @@
 use atom_syndication::{Entry, Content};
-use std::net::TcpStream;
+use std::io::{Read, Write};
 use imap::Session;
 use imap::types::Fetch;
 use imap_proto::types::BodyStructure::Text;
@@ -23,7 +23,7 @@ pub fn email_since_query(email: &str, date: &NaiveDate) -> Query {
     Query(format!("FROM \"{}\" SINCE {}", email, date.format("%d-%b-%Y")))
 }
 
-pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {
+pub fn fetch_entries<T: Read + Write>(imap_session: &mut Session<T>, author: &str, query: &Query) -> imap::error::Result<Vec<Entry>> {
     let sequences = imap_session.search(query.to_imap_query())?;
     println!("sequences: {:?}", sequences);
 
@@ -36,18 +36,23 @@ pub fn fetch_entries(imap_session: &mut Session<TcpStream>, author: &str, query:
     
         add_metadata_from_message(message, &author, &mut entry);
         
-        let content = get_message_content(message);
-        entry.set_content(content);
+        if let Some(content) = get_message_content(message) {        
+            entry.set_content(content);
 
-        let readable_entry = crate::readability::readable_version(&entry);
-
-        vec![entry, readable_entry]
+            let readable_entry = crate::readability::readable_version(&entry);
+            
+            vec![entry, readable_entry]
+        }
+        else {
+            println!("Skipping, as can't get content");
+            vec![]
+        }
     }).collect();
    
     Ok(entries)
 }
 
-fn get_message_content(message: &Fetch) -> Content {
+fn get_message_content(message: &Fetch) -> Option<Content> {
     let body_structure = message.bodystructure().unwrap();
     let html = match body_structure {
         t @ Text { .. } => { 
@@ -65,19 +70,20 @@ fn get_message_content(message: &Fetch) -> Content {
                 },
                 None => { 
                     println!("Missing text");
-                    None
+                    return None
                 }
             }
         },
+        // TODO: Handle Multipart
         _ => { 
-            println!("something else"); 
-            None
+            println!("something else: {:?}", body_structure); 
+            return None
         }
     };
     let mut content = Content::default();
     content.set_value(html.unwrap());
     content.set_content_type("text/html".to_string());
-    content
+    Some(content)
 }
 
 fn add_metadata_from_message(message: &Fetch, author: &str, entry: &mut Entry) {
