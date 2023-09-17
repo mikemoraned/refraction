@@ -10,5 +10,6 @@ imap = "2.4.1"
 toml = "0.8.0"
 serde = { version="1.0.188", features = ["derive"] }
 native-tls = "0.2.11"
+clap = { version = "4.4.3", features = ["derive"] }
 
 
