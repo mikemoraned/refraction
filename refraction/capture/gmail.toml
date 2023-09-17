@@ -1,0 +1,5 @@
+id = "gmail"
+domain = "imap.gmail.com"
+port = 993
+username = "lazysurefix@gmail.com"
+method = "TLS"
