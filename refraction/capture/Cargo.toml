@@ -11,5 +11,10 @@ toml = "0.8.0"
 serde = { version="1.0.188", features = ["derive"] }
 native-tls = "0.2.11"
 clap = { version = "4.4.3", features = ["derive"] }
+async-imap = { version="0.9.1", features = ["runtime-tokio"] }
+async-native-tls = { version="0.5.0", features = ["runtime-tokio"] }
+tokio = { version="1.32.0", features = ["rt-multi-thread", "macros"]}
+anyhow = "1.0.75"
+futures = "0.3.28"
 
 
